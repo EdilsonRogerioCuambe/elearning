@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { useParams, NavLink } from 'react-router-dom'
+import { useParams, NavLink, useNavigate } from 'react-router-dom'
 import { FaBookmark, FaPlay } from 'react-icons/fa';
 import Layout from '../../layout/Layout';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { AiOutlineFolderAdd } from 'react-icons/ai';
 import { BsTrash } from 'react-icons/bs';
 
 const Curso = () => {
-
+  const navigate = useNavigate();
   const { id } = useParams();
   const [curso, setCurso] = useState({});
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post(`http://localhost:5000/api/cursos/inscrever`, {
+        const { data } = await axios.post(`http://localhost:5000/api/cursos/inscrever`, {
           cursoId: id,
           estudanteId: usuario._id
         }, {
@@ -60,14 +60,20 @@ const Curso = () => {
           }
         });
 
-        fetchUsuario();
+        console.log(data);
+
+        if (data.stripeSession) {
+          window.location.href = data.stripeSession.url;
+        }
+
       }
     } catch (err) {
       console.log(err);
     }
-  }, [id, usuario._id, fetchUsuario]);
+  }, [id, usuario._id]);
 
   const desinscreverDoCurso = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -85,9 +91,11 @@ const Curso = () => {
     } catch (err) {
       console.log(err);
     }
+    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const favoritarCurso = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -106,9 +114,11 @@ const Curso = () => {
     } catch (err) {
       console.log(err);
     }
+    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const desfavoritarCurso = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -127,6 +137,7 @@ const Curso = () => {
     } catch (err) {
       console.log(err);
     }
+    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const apagarVideo = useCallback(async (videoId) => {

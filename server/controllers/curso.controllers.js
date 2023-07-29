@@ -2,6 +2,12 @@ import Cursos from '../models/curso.model.js';
 import asyncHandler from 'express-async-handler';
 import Instrutor from '../models/instrutor.model.js';
 import Estudante from '../models/estudante.model.js';
+import stripe from 'stripe';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const stripeInstance = stripe(process.env.STRIPE_SECRET_KEY);
 
 // @desc    Registra um novo curso
 // @route   POST /api/cursos
@@ -179,16 +185,120 @@ export const inscreverEstudante = asyncHandler(async (req, res) => {
       throw new Error('Curso já está na lista de cursos inscritos do estudante');
     }
 
-    curso.estudantes = curso.estudantes || [];
-    estudante.cursos = estudante.cursos || [];
+    const stripeSession = await stripeInstance.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: 'brl',
+            product_data: {
+              name: curso.nome,
+              description: curso.descricao,
+              images: [curso.thumbnail],
+            },
+            unit_amount: curso.preco * 100,
+          },
+          quantity: 1,
+        },
+      ],
+      customer_email: estudante.email,
+      success_url: `${process.env.CLIENT_URL}/curso/${curso._id}`,
+      cancel_url: `${process.env.CLIENT_URL}/`,
+      client_reference_id: curso._id,
+    });
 
-    curso.estudantes.push(estudante._id);
-    estudante.cursosInscritos.push(curso._id);
+    if (stripeSession.success_url) {
+      curso.estudantes = curso.estudantes || [];
+      estudante.cursos = estudante.cursos || [];
 
-    await curso.save();
-    await estudante.save();
+      curso.estudantes.push(estudante._id);
+      estudante.cursosInscritos.push(curso._id);
 
-    res.json({ message: 'Estudante inscrito com sucesso no curso' });
+      await curso.save();
+      await estudante.save();
+
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        auth: {
+          user: 'edilson@aluno.unilab.edu.br',
+          pass: '@minhasenha2001'
+        },
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL,
+        to: estudante.email,
+        subject: `Inscrição no curso ${curso.nome}`,
+        html: `
+          <html>
+            <head>
+              <style>
+                /* Your existing styles... */
+                .container {
+                  width: 100%;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                }
+
+                .header {
+                  background-color: #f1f1f1;
+                  padding: 20px;
+                  text-align: center;
+                }
+
+                .header h2 {
+                  margin: 0;
+                }
+
+                .content {
+                  padding: 20px;
+                }
+
+                .footer {
+                  background-color: #f1f1f1;
+                  padding: 10px;
+                  text-align: center;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Inscrição no curso ${curso.nome}</h2>
+                </div>
+                <div class="content">
+                  <p>Olá ${estudante.nome},</p>
+                  <p>Você se inscreveu no curso "${curso.nome}" com sucesso!</p>
+                  <p>Detalhes do curso:</p>
+                  <p><strong>Nome do curso:</strong> ${curso.nome}</p>
+                  <p><strong>Descrição:</strong> ${curso.descricao}</p>
+                  <p><strong>Preço:</strong> R$ ${curso.preco}</p>
+                  <img src="${curso.thumbnail}" alt="Thumbnail do curso ${curso.nome}" width="200" />
+                  <p>Acesse o curso através do link: <a href="${process.env.CLIENT_URL}/curso/${curso._id}">${process.env.CLIENT_URL}/curso/${curso._id}</a></p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log(`Email enviado: ${info.response}`);
+        }
+      });
+
+    } else {
+      res.status(400);
+      throw new Error('Pagamento não realizado');
+    }
+
+    res.json({ stripeSession });
   } catch (error) {
     res.status(400);
     throw new Error(error);
