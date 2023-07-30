@@ -37,7 +37,7 @@ const PerfilEstudante = () => {
   }, [fetchUsuario]);
 
   if (loading) {
-    return <Loading legenda={'Carregando...'} />
+    return <Loading legenda={'Carregando suas informações...'} />
   }
 
   console.log(usuario.certificados);
@@ -90,13 +90,9 @@ const PerfilEstudante = () => {
         );
       case 'certificados':
         return (
-          <div className="grid grid-cols-2 gap-4">
-            {usuario.certificados.map((certificado, index) => (
-              <div key={index} className="border-4 border-green-500 p-4 rounded shadow">
-                <CertifcadoPDF certificado={certificado} />
-              </div>
-            ))}
-          </div>
+          <>
+            <CertifcadoPDF certificados={usuario.certificados} />
+          </>
         );
       default:
         return null;

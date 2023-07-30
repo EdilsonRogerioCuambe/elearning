@@ -1,21 +1,31 @@
-import React from 'react';
+import { pdfjs } from 'react-pdf';
 import {
   Document,
   Page,
 } from 'react-pdf';
-import { pdfjs } from 'react-pdf';
-
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
-const CertificadoPDF = ({ certificado }) => {
+const CertificadoPDF = ({ certificados }) => {
+
+  console.log(certificados);
+
   return (
     <>
-      <Document
-        file={certificado}
-        onLoadSuccess={console.log('PDF carregado com sucesso!')}
-      >
-        <Page pageNumber={1} />
-      </Document>
+      <section className="pt-10">
+        <h1 className="text-4xl mb-10 uppercase text-green-400 font-bold font-mono">Certificados</h1>
+        <div className="flex flex-wrap">
+          {certificados.map((certificado) => (
+            <div key={certificado} className="rounded-lg overflow-hidden shadow-lg border-2 border-green-400 bg-transparent cursor-pointer">
+              <Document
+                file={certificado}
+                className="h-60"
+              >
+                <Page pageNumber={1} />
+              </Document>
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   );
 };

@@ -26,7 +26,7 @@ cloudinary.v2.config({
 const gerarCertificado = async (estudante, curso) => {
   const doc = new PDFDocument();
 
-  const caminhoDoPdf = `./certificados/${estudante.nome}-${curso.nome}.pdf`;
+  const caminhoDoPdf = path.join(__dirname, `certificados/${estudante.nome}-${curso.nome}.pdf`);
   const stream = fs.createWriteStream(caminhoDoPdf);
 
   doc.pipe(stream);
