@@ -7,7 +7,7 @@ const CursosFavoritados = ({ cursosFavoritados }) => {
   return (
     <>
       <section className="pt-10">
-        <h1 className="text-4xl mb-10 uppercase text-green-400 font-mono">Cursos Favoritados</h1>
+        <h1 className="text-4xl mb-10 uppercase text-green-400 font-bold font-mono">Cursos Favoritados</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {cursosFavoritados.map((curso) => (
             <div key={curso._id} className="rounded-lg overflow-hidden shadow-lg border-2 border-green-400 bg-transparent cursor-pointer">

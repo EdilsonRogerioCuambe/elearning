@@ -2,6 +2,7 @@ import Cursos from '../models/curso.model.js';
 import asyncHandler from 'express-async-handler';
 import Instrutor from '../models/instrutor.model.js';
 import Estudante from '../models/estudante.model.js';
+import Video from '../models/video.model.js';
 import stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
@@ -78,17 +79,19 @@ export const listarCursos = asyncHandler(async (req, res) => {
 // @route   GET /api/cursos/:id
 // @access  Público
 export const listarCursoPorId = asyncHandler(async (req, res) => {
-  const curso = await Cursos.findById(req.params.id)
+  const { id } = req.params;
+
+  const curso = await Cursos.findById(id)
     .populate('instrutor', '_id nome foto tipoUsuario')
-    .populate('videos', '_id titulo thumbnail descricao duracao');
+    .populate('videos', '_id titulo thumbnail descricao')
+
+  if (!curso) {
+    res.status(404);
+    throw new Error('Curso não encontrado');
+  }
 
   try {
-    if (curso) {
-      res.json(curso);
-    } else {
-      res.status(404);
-      throw new Error('Curso não encontrado');
-    }
+    res.json(curso);
   } catch (error) {
     res.status(400);
     throw new Error(error);
@@ -425,6 +428,41 @@ export const desfavoritarCurso = asyncHandler(async (req, res) => {
     await estudante.save();
 
     res.json({ message: 'Curso desfavoritado com sucesso' });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
+// @desc    Gerar o certifcado em pdf caso o estudante tenha assistido todos os vídeos do curso
+// @route   GET /api/cursos/:id/certificado
+// @access  Privado
+export const gerarCertificado = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const curso = await Cursos.findById(id).populate('videos');
+
+  if (!curso) {
+    res.status(404);
+    throw new Error('Curso não encontrado');
+  }
+
+  const estudante = await Estudante.findById(req.userId);
+
+  if (!estudante) {
+    res.status(404);
+    throw new Error('Estudante não encontrado');
+  }
+
+  const videosAssistidos = await Video.find({ curso: curso._id, usuariosCurtiram: estudante._id });
+
+  if (videosAssistidos.length !== curso.videos.length) {
+    res.status(400);
+    throw new Error('Estudante não assistiu todos os vídeos do curso');
+  }
+
+  try {
+    res.json({ message: 'Certificado gerado com sucesso' });
   } catch (error) {
     res.status(400);
     throw new Error(error);

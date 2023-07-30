@@ -112,7 +112,17 @@ export const getEstudanteProfile = asyncHandler(async (req, res) => {
         model: 'Instrutor',
       },
     })
-    .populate('cursosConcluidos');
+    .populate({
+      path: 'cursosConcluidos',
+      populate: {
+        path: 'videos',
+        model: 'Video',
+      },
+      populate: {
+        path: 'instrutor',
+        model: 'Instrutor',
+      },
+    });
 
   try {
     if (estudante) {

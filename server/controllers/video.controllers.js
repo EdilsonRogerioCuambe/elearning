@@ -2,6 +2,48 @@ import Video from "../models/video.model.js";
 import asyncHandler from "express-async-handler";
 import Curso from "../models/curso.model.js";
 import Comentario from "../models/comentario.model.js";
+import Estudante from "../models/estudante.model.js";
+import cloudinary from 'cloudinary';
+import fs from 'fs';
+import PDFDocument from 'pdfkit';
+import path from 'path';
+import Instrutor from "../models/instrutor.model.js";
+
+const __dirname = path.resolve();
+
+const dirPath = path.join(__dirname, 'certificados');
+if (!fs.existsSync(dirPath)) {
+  fs.mkdirSync(dirPath);
+}
+
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Gerar o certficado do usuário com todas as suas informações
+const gerarCertificado = async (estudante, curso) => {
+  const doc = new PDFDocument();
+
+  const caminhoDoPdf = `./certificados/${estudante.nome}-${curso.nome}.pdf`;
+  const stream = fs.createWriteStream(caminhoDoPdf);
+
+  doc.pipe(stream);
+
+  doc.fontSize(25).text(`Certificado de conclusão do curso ${curso.nome}`, {
+    align: 'center',
+  });
+  doc.fontSize(15).text(`O estudante ${estudante.nome} concluiu o curso ${curso.nome} com sucesso!`, {
+    align: 'center',
+  });
+  doc.fontSize(15).text(`Data de conclusão: ${new Date().toLocaleDateString()}`, {
+    align: 'center',
+  });
+  doc.end();
+
+  return caminhoDoPdf;
+};
 
 // @desc    Registra um novo video
 // @route   POST /api/videos
@@ -107,6 +149,62 @@ export const getVideo = asyncHandler(async (req, res) => {
       .exec();
 
     video.comentarios = [...comentariosEstudante, ...comentariosInstrutor];
+
+    // checar se o usuario é um instrutor
+    const instrutor = await Instrutor.findById(req.userId);
+
+    if (instrutor) {
+      return res.json(video);
+    }
+
+    // Verificar se o estudante assistiu o video e marca como assistido
+    const estudante = await Estudante.findById(req.userId);
+
+    if (!estudante) {
+      res.status(404);
+      throw new Error("Estudante não encontrado");
+    }
+
+    console.log(video.curso._id.toString());
+
+    const curso = await Curso.findById(video.curso._id.toString());
+
+    if (!curso) {
+      res.status(404);
+      throw new Error("Curso não encontrado");
+    }
+
+    const videosAssistidos = estudante.videosAssistidos.find(videoAssistido => videoAssistido.toString() === video._id.toString());
+
+    if (!videosAssistidos) {
+      estudante.videosAssistidos.push(video._id);
+
+      if (curso.videos.length === estudante.videosAssistidos.length) {
+        estudante.cursosConcluidos.push(curso._id);
+        await estudante.save();
+
+        // Gerar o certificado do usuário
+        const caminhoDoPdf = await gerarCertificado(estudante, curso);
+
+        // Upload do certificado para o Cloudinary
+        const certificado = await cloudinary.v2.uploader.upload(caminhoDoPdf, {
+          folder: 'certificados',
+          resource_type: 'auto',
+          public_id: `${estudante.nome}-${curso.nome}`,
+        });
+
+        // Adicionar o certificado ao estudante
+        estudante.certificados.push(certificado.url);
+        await estudante.save();
+
+        // Deletar o certificado do servidor
+        fs.unlinkSync(caminhoDoPdf);
+      } else {
+        await estudante.save();
+      }
+    } else {
+      video.assistido = true;
+    }
 
     res.json(video);
   } catch (error) {

@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
 import { PiCertificate } from 'react-icons/pi';
 import { BsFillStarFill, BsFillPersonFill } from 'react-icons/bs';
 import { IoIosSchool, IoMdCheckmarkCircleOutline } from 'react-icons/io';
-import { CursosInscritos, CursosFavoritados, CursosConcluidos } from '../../components';
+import { CursosInscritos, CursosFavoritados, CursosConcluidos, CertifcadoPDF } from '../../components';
 import Layout from '../../layout/Layout';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import { Loading } from '../../components';
 
 const PerfilEstudante = () => {
   const [activeTab, setActiveTab] = useState('perfil');
-  const { register, handleSubmit, formState: { errors } } = useForm();
   const [loading, setLoading] = useState(false);
   const [usuario, setUsuario] = useState({});
 
@@ -39,11 +36,11 @@ const PerfilEstudante = () => {
     fetchUsuario();
   }, [fetchUsuario]);
 
-  const onSubmit = (data) => { };
-
   if (loading) {
     return <Loading legenda={'Carregando...'} />
   }
+
+  console.log(usuario.certificados);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -69,7 +66,7 @@ const PerfilEstudante = () => {
                 )}</h2>
                 <h2 className="text-xl mb-2">CPF: {usuario.cpf}</h2>
                 <h2 className="text-xl mb-2">Endereço: {usuario.endereco}</h2>
-                </div>
+              </div>
             </div>
           </>
         );
@@ -88,16 +85,15 @@ const PerfilEstudante = () => {
       case 'cursosConcluidos':
         return (
           <>
-            <CursosConcluidos />
+            <CursosConcluidos CursosConcluidos={usuario.cursosConcluidos} />
           </>
         );
       case 'certificados':
         return (
           <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="border-2 border-green-500 p-4 rounded shadow">
-                <h2 className="text-xl mb-2">Certificado: </h2>
-                <h2 className="text-xl mb-2">Curso:</h2>
+            {usuario.certificados.map((certificado, index) => (
+              <div key={index} className="border-4 border-green-500 p-4 rounded shadow">
+                <CertifcadoPDF certificado={certificado} />
               </div>
             ))}
           </div>

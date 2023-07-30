@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-const comentarioSchema = new Schema({
+const estudanteSchema = new Schema({
   nome: {
     type: String,
     required: true,
@@ -56,7 +56,8 @@ const comentarioSchema = new Schema({
   },
   cursosInscritos: [{
     type: Schema.Types.ObjectId,
-    ref: 'Curso'
+    ref: 'Curso',
+    default: 0,
   }],
   cursosConcluidos: [{
     type: Schema.Types.ObjectId,
@@ -65,7 +66,6 @@ const comentarioSchema = new Schema({
   certificados: [{
     type: String,
     trim: true,
-    maxlength: 100,
   }],
   cursosFavoritos: [{
     type: Schema.Types.ObjectId,
@@ -76,6 +76,10 @@ const comentarioSchema = new Schema({
     trim: true,
     maxlength: 100,
   },
+  videosAssistidos: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Video'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -84,4 +88,4 @@ const comentarioSchema = new Schema({
   timestamps: true,
 });
 
-export default model('Estudante', comentarioSchema);
+export default model('Estudante', estudanteSchema);

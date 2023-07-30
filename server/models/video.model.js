@@ -68,6 +68,10 @@ const videoSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  assistido: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });

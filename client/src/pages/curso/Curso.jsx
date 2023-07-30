@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { useParams, NavLink, useNavigate } from 'react-router-dom'
+import { useParams, NavLink } from 'react-router-dom'
 import { FaBookmark, FaPlay } from 'react-icons/fa';
 import Layout from '../../layout/Layout';
 import axios from 'axios';
@@ -8,7 +8,6 @@ import { AiOutlineFolderAdd } from 'react-icons/ai';
 import { BsTrash } from 'react-icons/bs';
 
 const Curso = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
   const [curso, setCurso] = useState({});
   const [loading, setLoading] = useState(false);
@@ -18,7 +17,11 @@ const Curso = () => {
   const fetchCurso = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/cursos/${id}`);
+      const res = await axios.get(`http://localhost:5000/api/cursos/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       setCurso(res.data);
       console.log(res.data);
     } catch (err) {
@@ -60,8 +63,6 @@ const Curso = () => {
           }
         });
 
-        console.log(data);
-
         if (data.stripeSession) {
           window.location.href = data.stripeSession.url;
         }
@@ -73,7 +74,6 @@ const Curso = () => {
   }, [id, usuario._id]);
 
   const desinscreverDoCurso = useCallback(async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -91,15 +91,13 @@ const Curso = () => {
     } catch (err) {
       console.log(err);
     }
-    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const favoritarCurso = useCallback(async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const res = await axios.post(`http://localhost:5000/api/cursos/favoritar`, {
+        await axios.post(`http://localhost:5000/api/cursos/favoritar`, {
           cursoId: id,
           estudanteId: usuario._id
         }, {
@@ -109,20 +107,17 @@ const Curso = () => {
         });
 
         fetchUsuario();
-        console.log(res.data.message);
       }
     } catch (err) {
       console.log(err);
     }
-    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const desfavoritarCurso = useCallback(async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const res = await axios.post(`http://localhost:5000/api/cursos/desfavoritar`, {
+        await axios.post(`http://localhost:5000/api/cursos/desfavoritar`, {
           cursoId: id,
           estudanteId: usuario._id
         }, {
@@ -132,12 +127,10 @@ const Curso = () => {
         });
 
         fetchUsuario();
-        console.log(res.data.message);
       }
     } catch (err) {
       console.log(err);
     }
-    setLoading(false);
   }, [id, usuario._id, fetchUsuario]);
 
   const apagarVideo = useCallback(async (videoId) => {
@@ -301,7 +294,6 @@ const Curso = () => {
           </div>
         </section>
 
-
         <section className="mx-6 font-mono">
           <h1 className="text-5xl mb-8 font-bold">Aulas</h1>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 md:grip-cols-2 sm:grid-cols-1">
@@ -319,7 +311,7 @@ const Curso = () => {
                   <div className="p-4">
                     <h3 className="text-xl mb-4">{video?.titulo}</h3>
                     <p className="text-gray-400">
-                      {video?.descricao.length > 100 ? `${video?.descricao.substring(0, 100)}...` : video?.descricao}
+                      {video?.descricao?.length > 100 ? `${video?.descricao?.substring(0, 100)}...` : video?.descricao}
                     </p>
                   </div>
                 </NavLink>
