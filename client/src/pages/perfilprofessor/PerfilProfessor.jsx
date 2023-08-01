@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { faker } from '@faker-js/faker'
-import { FaUserCircle } from 'react-icons/fa'
 import { CursosProfessor } from '../../components'
 import Layout from '../../layout/Layout'
 import axios from 'axios'

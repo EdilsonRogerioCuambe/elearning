@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Layout from '../../layout/Layout'
 import { CategoriasCards, CursosCards, Loading } from '../../components';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usuario, setUsuario] = useState({});
@@ -13,19 +15,18 @@ const Home = () => {
     try {
       const tipoUsuario = localStorage.getItem('tipo');
       const token = localStorage.getItem('token');
-      if (token && tipoUsuario === 'estudantes') {
-        const res = await axios.get(`http://localhost:5000/api/${tipoUsuario}/perfil`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setUsuario(res.data);
-      }
+      const res = await axios.get(`http://localhost:5000/api/${tipoUsuario}/perfil`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUsuario(res.data);
+      navigate('/');
     } catch (err) {
       console.log(err);
     }
     setLoading(false);
-  }, []);
+  }, [navigate]);
 
   const getCursos = useCallback(async () => {
     try {

@@ -189,7 +189,7 @@ const Assistir = () => {
                 <p className="flex items-center"><FaCalendar className="mr-1 text-red-500" />
                   <span>
                     {
-                      new Date(video?.updatedAt).toLocaleDateString(
+                      new Date(video?.createdAt).toLocaleDateString(
                         'pt-BR',
                         {
                           year: 'numeric',

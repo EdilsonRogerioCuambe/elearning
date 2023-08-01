@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { FaSearch } from 'react-icons/fa'
 import Layout from '../../layout/Layout'
-import { faker } from '@faker-js/faker'
 import { NavLink } from 'react-router-dom'
 import axios from 'axios'
 import { Loading } from '../../components'

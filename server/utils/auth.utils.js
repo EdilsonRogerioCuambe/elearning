@@ -41,30 +41,33 @@ export const generateUserToken = async (userModel, req, res) => {
 }
 
 // Verifica um token
-export const verifyUserToken = async (req, res, next) => {
-  let token;
+export const verifyUserToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  if (authHeader && authHeader.startsWith('Bearer')) {
+    const token = authHeader.split(' ')[1];
+
     try {
-      token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
       req.userId = decoded.id;
       req.userEmail = decoded.email;
       req.userNome = decoded.nome;
       req.userIsAdmin = decoded.isAdmin;
       req.userFoto = decoded.foto;
-       next();
+      next();
     } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        res.status(401);
+        return res.json({ message: 'Token expired. Please log in again.' });
+      }
+
       console.error(error);
       res.status(403);
-      throw new Error('Não autorizado, token inválido ou expirado');
+      throw new Error('Not authorized, invalid or expired token');
     }
-  }
-
-  if (!token) {
+  } else {
     res.status(401);
-    throw new Error('Não autorizado, token não encontrado');
+    return res.json({ message: 'Authorization header not found or invalid.' });
   }
 };
 

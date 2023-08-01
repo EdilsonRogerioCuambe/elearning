@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { useParams, NavLink } from 'react-router-dom'
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, NavLink } from 'react-router-dom';
 import { FaBookmark, FaPlay } from 'react-icons/fa';
 import Layout from '../../layout/Layout';
 import axios from 'axios';
@@ -7,23 +7,25 @@ import { AddVideoModal, Loading } from '../../components';
 import { AiOutlineFolderAdd } from 'react-icons/ai';
 import { BsTrash } from 'react-icons/bs';
 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 const Curso = () => {
   const { id } = useParams();
   const [curso, setCurso] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [usuario, setUsuario] = useState({});
+  const [isUserSubscribed, setIsUserSubscribed] = useState(false);
+  const [isUserFavorited, setIsUserFavorited] = useState(false);
 
   const fetchCurso = useCallback(async () => {
-    setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/cursos/${id}`, {
+      const res = await axios.get(`${API_BASE_URL}/cursos/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
       setCurso(res.data);
-      console.log(res.data);
     } catch (err) {
       console.log(err);
     }
@@ -31,21 +33,21 @@ const Curso = () => {
   }, [id]);
 
   const fetchUsuario = useCallback(async () => {
-    setLoading(true);
-    try {
-      const tipoUsuario = localStorage.getItem('tipo');
-      const token = localStorage.getItem('token');
-      if (token && tipoUsuario === 'estudantes') {
-        const res = await axios.get(`http://localhost:5000/api/estudantes/perfil`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setUsuario(res.data);
-        console.log(res.data);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tipoUsuario = localStorage.getItem('tipo');
+        if (tipoUsuario === 'estudantes') {
+          const res = await axios.get(`${API_BASE_URL}/estudantes/perfil`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          setUsuario(res.data);
+        }
+      } catch (err) {
+        console.log(err);
       }
-    } catch (err) {
-      console.log(err);
     }
     setLoading(false);
   }, []);
@@ -54,19 +56,24 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const { data } = await axios.post(`http://localhost:5000/api/cursos/inscrever`, {
-          cursoId: id,
-          estudanteId: usuario._id
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        const { data } = await axios.post(
+          `${API_BASE_URL}/cursos/inscrever`,
+          {
+            cursoId: id,
+            estudanteId: usuario._id
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
 
         if (data.stripeSession) {
           window.location.href = data.stripeSession.url;
         }
 
+        setIsUserSubscribed(true);
       }
     } catch (err) {
       console.log(err);
@@ -77,15 +84,20 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post(`http://localhost:5000/api/cursos/desinscrever`, {
-          cursoId: id,
-          estudanteId: usuario._id
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        await axios.post(
+          `${API_BASE_URL}/cursos/desinscrever`,
+          {
+            cursoId: id,
+            estudanteId: usuario._id
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
 
+        setIsUserSubscribed(false);
         fetchUsuario();
       }
     } catch (err) {
@@ -97,15 +109,20 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post(`http://localhost:5000/api/cursos/favoritar`, {
-          cursoId: id,
-          estudanteId: usuario._id
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        await axios.post(
+          `${API_BASE_URL}/cursos/favoritar`,
+          {
+            cursoId: id,
+            estudanteId: usuario._id
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
 
+        setIsUserFavorited(true);
         fetchUsuario();
       }
     } catch (err) {
@@ -117,15 +134,20 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post(`http://localhost:5000/api/cursos/desfavoritar`, {
-          cursoId: id,
-          estudanteId: usuario._id
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        await axios.post(
+          `${API_BASE_URL}/cursos/desfavoritar`,
+          {
+            cursoId: id,
+            estudanteId: usuario._id
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
 
+        setIsUserFavorited(false);
         fetchUsuario();
       }
     } catch (err) {
@@ -137,17 +159,17 @@ const Curso = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.delete(`http://localhost:5000/api/videos/${videoId}`, {
+        await axios.delete(`${API_BASE_URL}/videos/${videoId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        // Remove o vídeo apagado da lista de vídeos
+        // Remove the deleted video from the list of videos
         setCurso((prevState) => {
           return {
             ...prevState,
-            videos: prevState.videos.filter(video => video._id !== videoId)
-          }
+            videos: prevState.videos.filter((video) => video._id !== videoId)
+          };
         });
       }
     } catch (err) {
@@ -158,10 +180,19 @@ const Curso = () => {
   useEffect(() => {
     fetchCurso();
     fetchUsuario();
-  }, [fetchCurso, fetchUsuario, inscreverNoCurso, favoritarCurso, desfavoritarCurso, desinscreverDoCurso]);
+  }, [fetchCurso, fetchUsuario]);
+
+  useEffect(() => {
+    setIsUserSubscribed(
+      usuario?.cursosInscritos?.some((cursoInscrito) => cursoInscrito._id === curso._id) || false
+    );
+    setIsUserFavorited(
+      usuario?.cursosFavoritos?.some((cursoFavorito) => cursoFavorito._id === curso._id) || false
+    );
+  }, [usuario, curso]);
 
   if (loading) {
-    return <Loading legenda={'Carregando Curso...'} />
+    return <Loading legenda={'Carregando Curso...'} />;
   }
 
   return (
@@ -210,7 +241,7 @@ const Curso = () => {
             </div>
 
             <div className="flex flex-col justify-between lg:flex-row lg:justify-start lg:items-center">
-              {usuario && !usuario?.cursosFavoritos?.map(cursoFavorito => cursoFavorito._id).includes(curso._id) ?
+              {!isUserFavorited ?
                 <div className="mb-6">
                   <button
                     onClick={favoritarCurso}
@@ -238,7 +269,7 @@ const Curso = () => {
                 </div>
               }
 
-              {usuario && !usuario?.cursosInscritos?.map(cursoInscrito => cursoInscrito._id).includes(curso._id) ?
+              {!isUserSubscribed ?
                 <div className="mb-6 mx-4">
                   <button
                     onClick={inscreverNoCurso}
@@ -266,8 +297,7 @@ const Curso = () => {
                 </div>
               }
 
-              {
-                usuario?._id === curso?.instrutor?._id ? (
+              {usuario?._id === curso?.instrutor?._id ? (
                   <>
                     <div className="mb-6">
                       <button

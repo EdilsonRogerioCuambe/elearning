@@ -34,7 +34,7 @@ const CursosCards = ({ usuario, cursos, favoritarCurso, desfavoritarCurso }) => 
                   <NavLink to={`/curso/${curso._id}`} className={'border-2 border-green-500 rounded-md px-4 py-2 text-green-500 font-mono hover:bg-green-500 hover:text-white transition-all duration-300'}>
                     <AiFillEye className='inline-block mr-2 text-2xl' /> Ver Curso
                   </NavLink>
-                  {usuario && usuario?.cursosFavoritos?.map((cursoFavorito) => cursoFavorito._id).includes(curso._id) ? (
+                  {usuario && usuario?.cursosFavoritos?.map((cursoFavorito) => cursoFavorito?._id).includes(curso?._id) ? (
                     <button
                       onClick={() => desfavoritarCurso(curso._id)}
                       className={'border-2 border-red-400 rounded-md px-4 py-2 text-red-400 font-mono transition-all duration-300'}
