@@ -5,7 +5,7 @@ import { MdVerifiedUser } from 'react-icons/md';
 import { AiFillEye, AiFillHeart } from 'react-icons/ai';
 import { FaRegHeart } from 'react-icons/fa';
 
-const CursosCards = ({ usuario, cursos, favoritarCurso, desfavoritarCurso, isUserFavorited }) => {
+const CursosCards = ({ cursos, favoritarCurso, desfavoritarCurso, isUserFavorited }) => {
   return (
     <section className="mt-10">
       <h1 className="text-4xl uppercase text-green-400 font-bold font-mono">Cursos</h1>

@@ -165,8 +165,8 @@ const Assistir = () => {
     await axios.put(`http://localhost:5000/api/videos/${aula}/links`, {
       link: newLink,
     });
-    setNewLink(''); // Clear the input field
-    getVideo(); // Re-fetch the video to get the updated list of links
+    setNewLink('');
+    getVideo();
   };
 
   if (loading) {

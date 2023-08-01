@@ -5,9 +5,10 @@ import Comentario from "../models/comentario.model.js";
 import Estudante from "../models/estudante.model.js";
 import cloudinary from 'cloudinary';
 import fs from 'fs';
-import PDFDocument from 'pdfkit';
 import path from 'path';
 import Instrutor from "../models/instrutor.model.js";
+import pdf from 'html-pdf';
+import ejs from 'ejs';
 
 const __dirname = path.resolve();
 
@@ -22,28 +23,56 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Gerar o certficado do usuário com todas as suas informações
-const gerarCertificado = async (estudante, curso) => {
-  const doc = new PDFDocument();
+const gerarCertificado = asyncHandler(async (estudante, curso, instrutorDoCurso) => {
+  return new Promise((resolve, reject) => {
+    // HTML template for the certificate
+    const caminhoDoTemplate = path.join(__dirname, 'views', 'template.ejs');
 
-  const caminhoDoPdf = path.join(__dirname, `certificados/${estudante.nome}-${curso.nome}.pdf`);
-  const stream = fs.createWriteStream(caminhoDoPdf);
+    fs.readFile(caminhoDoTemplate, 'utf8', (err, data) => {
+      if (err) {
+        console.log('Error reading EJS template:', err);
+        reject(err);
+      } else {
+        // Renderizar o template EJS com os dados do estudante e curso
+        const htmlTemplate = ejs.render(data, {
+          estudante: {
+            nome: estudante.nome,
+            email: estudante.email,
+            cpf: estudante.cpf,
+            foto: estudante.foto,
+          },
+          curso: {
+            nome: curso.nome,
+            descricao: curso.descricao,
+            thumbnail: curso.thumbnail,
+          },
+          dataConclusao: new Date().toLocaleDateString(),
+          instrutor: {
+            nome: instrutorDoCurso.nome,
+            email: instrutorDoCurso.email,
+            foto: instrutorDoCurso.foto,
+          },
+        });
+        const pdfOptions = {
+          format: 'A4',
+          orientation: 'landscape',
+        };
 
-  doc.pipe(stream);
-
-  doc.fontSize(25).text(`Certificado de conclusão do curso ${curso.nome}`, {
-    align: 'center',
+        // Create the pdf
+        const caminhoDoPdf = path.join(__dirname, 'certificados', `${estudante.nome}-${curso.nome}.pdf`);
+        pdf.create(htmlTemplate, pdfOptions).toFile(caminhoDoPdf, (err, res) => {
+          if (err) {
+            console.log('Error creating PDF:', err);
+            reject(err); // Rejeita a Promise em caso de erro
+          } else {
+            console.log(res);
+            resolve(caminhoDoPdf); // Resolve a Promise com o caminho do arquivo gerado
+          }
+        });
+      }
+    });
   });
-  doc.fontSize(15).text(`O estudante ${estudante.nome} concluiu o curso ${curso.nome} com sucesso!`, {
-    align: 'center',
-  });
-  doc.fontSize(15).text(`Data de conclusão: ${new Date().toLocaleDateString()}`, {
-    align: 'center',
-  });
-  doc.end();
-
-  return caminhoDoPdf;
-};
+});
 
 // @desc    Registra um novo video
 // @route   POST /api/videos
@@ -165,7 +194,7 @@ export const getVideo = asyncHandler(async (req, res) => {
       throw new Error("Estudante não encontrado");
     }
 
-    console.log(video.curso._id.toString());
+    const instrutorDoCurso = await Instrutor.findById(video.instrutor._id.toString());
 
     const curso = await Curso.findById(video.curso._id.toString());
 
@@ -184,7 +213,7 @@ export const getVideo = asyncHandler(async (req, res) => {
         await estudante.save();
 
         // Gerar o certificado do usuário
-        const caminhoDoPdf = await gerarCertificado(estudante, curso);
+        const caminhoDoPdf = await gerarCertificado(estudante, curso, instrutorDoCurso);
 
         // Upload do certificado para o Cloudinary
         const certificado = await cloudinary.v2.uploader.upload(caminhoDoPdf, {
@@ -213,7 +242,6 @@ export const getVideo = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
-
 
 // @desc    Atualiza um video
 // @route   PUT /api/videos/:id
